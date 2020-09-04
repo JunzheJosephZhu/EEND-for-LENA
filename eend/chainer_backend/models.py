@@ -16,7 +16,10 @@ C: number of speakers (classes)
 D: dimension of embedding (for deep clustering loss)
 B: mini-batch size
 """
-
+def balanced_BCE(pred, truth):
+    pred = F.sigmoid(pred)
+    loss =  0.65 * F.log(pred) * truth + 0.35 * F.log(1 - pred) * (1 - truth)
+    return - F.mean(loss)
 
 def pit_loss(pred, label, label_delay=0):
     """
@@ -38,7 +41,8 @@ def pit_loss(pred, label, label_delay=0):
     label_perms = [label[..., list(p)] for p
                    in permutations(range(label.shape[-1]))]
     losses = F.stack(
-        [F.sigmoid_cross_entropy(
+        #[F.sigmoid_cross_entropy(
+        [balanced_BCE(
             pred[label_delay:, ...],
             l[:len(l) - label_delay, ...]) for l in label_perms])
     xp = cuda.get_array_module(losses)

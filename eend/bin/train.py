@@ -3,17 +3,19 @@
 # Copyright 2019 Hitachi, Ltd. (author: Yusuke Fujita)
 # Licensed under the MIT license.
 #
+import sys
+sys.path.append('/home/joseph/Desktop/EEND')
 import yamlargparse
 from eend import system_info
 
 parser = yamlargparse.ArgumentParser(description='EEND training')
 parser.add_argument('-c', '--config', help='config file path',
                     action=yamlargparse.ActionConfigFile)
-parser.add_argument('train_data_dir',
+parser.add_argument('--train_data_dir', default='/home/joseph/Desktop/LENA_praat/train.scp',
                     help='kaldi-style data dir used for training.')
-parser.add_argument('valid_data_dir',
+parser.add_argument('--valid_data_dir', default='/home/joseph/Desktop/LENA_praat/test.scp',
                     help='kaldi-style data dir used for validation.')
-parser.add_argument('model_save_dir',
+parser.add_argument('--model_save_dir', default='/home/joseph/Desktop/EEND/models',
                     help='output directory which model file will be saved in.')
 parser.add_argument('--backend', default='chainer',
                     choices=['chainer', 'pytorch'],
@@ -24,17 +26,17 @@ parser.add_argument('--initmodel', '-m', default='',
                     help='Initialize the model from given file')
 parser.add_argument('--resume', '-r', default='',
                     help='Resume the optimization from snapshot')
-parser.add_argument('--gpu', '-g', default=-1, type=int,
+parser.add_argument('--gpu', '-g', default=0, type=int,
                     help='GPU ID (negative value indicates CPU)')
 parser.add_argument('--max-epochs', default=20, type=int,
                     help='Max. number of epochs to train')
-parser.add_argument('--input-transform', default='',
+parser.add_argument('--input-transform', default='', # logmel doesn't work?
                     choices=['', 'log', 'logmel', 'logmel23', 'logmel23_mn',
                              'logmel23_mvn', 'logmel23_swn'],
                     help='input transform')
 parser.add_argument('--lr', default=0.001, type=float)
 parser.add_argument('--optimizer', default='adam', type=str)
-parser.add_argument('--num-speakers', default=4, type=int)
+parser.add_argument('--num-speakers', default=3, type=int)
 parser.add_argument('--gradclip', default=-1, type=int,
                     help='gradient clipping. if < 0, no clipping')
 parser.add_argument('--num-frames', default=2000, type=int,
@@ -48,7 +50,7 @@ parser.add_argument('--hidden-size', default=256, type=int,
                     help='number of lstm output nodes')
 parser.add_argument('--num-lstm-layers', default=1, type=int,
                     help='number of lstm layers')
-parser.add_argument('--dc-loss-ratio', default=0.5, type=float)
+parser.add_argument('--dc-loss-ratio', default=0, type=float)
 parser.add_argument('--embedding-layers', default=2, type=int)
 parser.add_argument('--embedding-size', default=256, type=int)
 parser.add_argument('--context-size', default=0, type=int)

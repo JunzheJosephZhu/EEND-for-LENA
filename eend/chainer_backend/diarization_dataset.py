@@ -5,7 +5,7 @@ import chainer
 import numpy as np
 from eend import kaldi_data
 from eend import feature
-
+import json
 
 def _count_frames(data_len, size, step):
     # no padding at edges, last remaining samples are ignored
@@ -41,7 +41,8 @@ class KaldiDiarizationDataset(chainer.dataset.DatasetMixin):
             label_delay=0,
             n_speakers=None,
             ):
-        self.data_dir = data_dir
+        with open(data_dir) as file:
+            self.data = json.load(file)
         self.dtype = dtype
         self.chunk_size = chunk_size
         self.context_size = context_size
@@ -53,11 +54,10 @@ class KaldiDiarizationDataset(chainer.dataset.DatasetMixin):
         self.chunk_indices = []
         self.label_delay = label_delay
 
-        self.data = kaldi_data.KaldiData(self.data_dir)
 
         # make chunk indices: filepath, start_frame, end_frame
-        for rec in self.data.wavs:
-            data_len = int(self.data.reco2dur[rec] * rate / frame_shift)
+        for rec in self.data:
+            data_len = int(60 * 10 * rate / frame_shift)
             data_len = int(data_len / self.subsampling)
             for st, ed in _gen_frame_indices(
                     data_len, chunk_size, chunk_size, use_last_samples,
@@ -73,8 +73,9 @@ class KaldiDiarizationDataset(chainer.dataset.DatasetMixin):
     def get_example(self, i):
         rec, st, ed = self.chunk_indices[i]
         Y, T = feature.get_labeledSTFT(
-            self.data,
+#            self.data,
             rec,
+            self.data[rec],
             st,
             ed,
             self.frame_size,

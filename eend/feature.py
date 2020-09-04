@@ -9,6 +9,7 @@ import scipy.signal
 from scipy.io.wavfile import read
 from praatio import tgio
 import glob
+import time
 
 def get_input_dim(
         frame_size,
@@ -172,7 +173,8 @@ def _count_frames(data_len, size, shift):
 
 def get_frame_labels(
 #        kaldi_obj,
-        rec,
+        wavfile,
+        annofile,
         start=0,
         end=None,
         frame_size=1024,
@@ -194,15 +196,11 @@ def get_frame_labels(
             (n_frames, n_speakers)-shaped np.int32 array
     """
     spkr2idx = {'CHN':0, 'FAN':1, 'MAN':2} # CXN?
-    wavfile = rec
-    try: # read annotation files
-        annofile = wavfile.replace('.wav', '.TextGrid')
-        tg = tgio.openTextgrid(annofile)
-    except:
-        annofile = wavfile.replace('.wav', '.textgrid')
-        tg = tgio.openTextgrid(annofile)  
+    tg = tgio.openTextgrid(annofile)  
     rate, data = read(wavfile)
     data = np.array(data[:10*60*rate], dtype=np.float32) # cut files to 10 minutes
+    es = end * frame_shift if end is not None else None
+    data = data[start * frame_shift: es]
     # data = data - data.mean() # unit normalization
     # data /= data.std()
 
@@ -235,7 +233,7 @@ def get_frame_labels(
 
 def get_labeledSTFT(
 #        kaldi_obj,
-        rec, start, end, frame_size, frame_shift,
+        wavfile, annofile, start, end, frame_size, frame_shift,
         n_speakers=None,
         use_speaker_id=False):
     """ Extracts STFT and corresponding labels
@@ -258,17 +256,12 @@ def get_labeledSTFT(
         T: label
             (n_frames, n_speakers)-shaped np.int32 array.
     """
-    wavfile = rec
-    try: # read annotation files
-        glob.glob(wavfile.replace('.wav', '*.TextGrid'))[0]
-        tg = tgio.openTextgrid(annofile)
-    except:
-        glob.glob(wavfile.replace('.wav', '*.textGrid'))[0]
-        tg = tgio.openTextgrid(annofile)  
-    rate, data = read(wavfile)[start*frame_shift: end*frame_shift]
+    tg = tgio.openTextgrid(annofile)
+    rate, data = read(wavfile)
     data = np.array(data[:10*60*rate], dtype=np.float32) # cut files to 10 minutes
     data = data - data.mean() # unit normalization
     data /= data.std()
+    data = data[start * frame_shift: end * frame_shift]
     Y = stft(data, frame_size, frame_shift)
     spkr2idx = {'CHN':0, 'FAN':1, 'MAN':2} # CXN?
     if n_speakers is None:
@@ -293,5 +286,4 @@ def get_labeledSTFT(
                 rel_end = end_frame - start
             if rel_start is not None or rel_end is not None:
                 T[rel_start:rel_end, speaker_index] = 1
-
     return Y, T
